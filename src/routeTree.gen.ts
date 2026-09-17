@@ -14,6 +14,7 @@ import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as UpcomingRouteImport } from './routes/upcoming'
 import { Route as SubscriptionsIndexRouteImport } from './routes/subscriptions.index'
+import { Route as SubscriptionsIdRouteImport } from './routes/subscriptions.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,12 +41,18 @@ const SubscriptionsIndexRoute = SubscriptionsIndexRouteImport.update({
   path: '/subscriptions/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SubscriptionsIdRoute = SubscriptionsIdRouteImport.update({
+  id: '/subscriptions/$id',
+  path: '/subscriptions/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/calendar': typeof CalendarRoute
   '/settings': typeof SettingsRoute
   '/upcoming': typeof UpcomingRoute
+  '/subscriptions/$id': typeof SubscriptionsIdRoute
   '/subscriptions/': typeof SubscriptionsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +60,7 @@ export interface FileRoutesByTo {
   '/calendar': typeof CalendarRoute
   '/settings': typeof SettingsRoute
   '/upcoming': typeof UpcomingRoute
+  '/subscriptions/$id': typeof SubscriptionsIdRoute
   '/subscriptions': typeof SubscriptionsIndexRoute
 }
 export interface FileRoutesById {
@@ -61,19 +69,33 @@ export interface FileRoutesById {
   '/calendar': typeof CalendarRoute
   '/settings': typeof SettingsRoute
   '/upcoming': typeof UpcomingRoute
+  '/subscriptions/$id': typeof SubscriptionsIdRoute
   '/subscriptions/': typeof SubscriptionsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/calendar' | '/settings' | '/upcoming' | '/subscriptions/'
+  fullPaths:
+    | '/'
+    | '/calendar'
+    | '/settings'
+    | '/upcoming'
+    | '/subscriptions/$id'
+    | '/subscriptions/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/calendar' | '/settings' | '/upcoming' | '/subscriptions'
+  to:
+    | '/'
+    | '/calendar'
+    | '/settings'
+    | '/upcoming'
+    | '/subscriptions/$id'
+    | '/subscriptions'
   id:
     | '__root__'
     | '/'
     | '/calendar'
     | '/settings'
     | '/upcoming'
+    | '/subscriptions/$id'
     | '/subscriptions/'
   fileRoutesById: FileRoutesById
 }
@@ -82,6 +104,7 @@ export interface RootRouteChildren {
   CalendarRoute: typeof CalendarRoute
   SettingsRoute: typeof SettingsRoute
   UpcomingRoute: typeof UpcomingRoute
+  SubscriptionsIdRoute: typeof SubscriptionsIdRoute
   SubscriptionsIndexRoute: typeof SubscriptionsIndexRoute
 }
 
@@ -122,6 +145,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SubscriptionsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/subscriptions/$id': {
+      id: '/subscriptions/$id'
+      path: '/subscriptions/$id'
+      fullPath: '/subscriptions/$id'
+      preLoaderRoute: typeof SubscriptionsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -130,6 +160,7 @@ const rootRouteChildren: RootRouteChildren = {
   CalendarRoute: CalendarRoute,
   SettingsRoute: SettingsRoute,
   UpcomingRoute: UpcomingRoute,
+  SubscriptionsIdRoute: SubscriptionsIdRoute,
   SubscriptionsIndexRoute: SubscriptionsIndexRoute,
 }
 export const routeTree = rootRouteImport
