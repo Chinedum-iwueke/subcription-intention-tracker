@@ -15,8 +15,11 @@ export function toISODate(d: Date): ISODate {
 
 /** Parse yyyy-mm-dd into a UTC Date at midnight. */
 export function parseISODate(s: ISODate): Date {
-  const [y, m, d] = s.split("-").map(Number);
-  return new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1));
+  const parts = s.split("-").map(Number);
+  const y = parts[0] ?? 1970;
+  const m = parts[1] ?? 1;
+  const d = parts[2] ?? 1;
+  return new Date(Date.UTC(y, m - 1, d));
 }
 
 export function todayISO(): ISODate {
