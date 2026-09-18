@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import * as React from "react";
 import { ArrowUpRight, ChevronLeft, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
@@ -656,5 +656,3 @@ function RemindersPreview({ commitment: c, today }: { commitment: Commitment; to
     </>
   );
 }
-
-export { notFound };
