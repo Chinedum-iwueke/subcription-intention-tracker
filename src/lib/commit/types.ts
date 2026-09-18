@@ -49,11 +49,11 @@ export interface FieldClaim {
   label: string;
   /** Human readable current value, or null when unknown. */
   value: string | null;
-  unknownReason?: UnknownReason;
+  unknownReason?: UnknownReason | undefined;
   origin: OriginType;
   capturedAt: string; // ISO datetime
   verification: Verification;
-  excerpt?: string;
+  excerpt?: string | undefined;
 }
 
 export interface TermVersion {
@@ -62,10 +62,10 @@ export interface TermVersion {
   effectiveTo?: string | null;
   /** Integer minor units (cents). null = unknown. */
   amountMinor: number | null;
-  amountUnknownReason?: UnknownReason;
+  amountUnknownReason?: UnknownReason | undefined;
   currency: string; // ISO 4217
   recurrence: Recurrence | null;
-  note?: string;
+  note?: string | undefined;
 }
 
 export interface HistoryEntry {
@@ -81,16 +81,16 @@ export interface HistoryEntry {
     | "window_acknowledged"
     | "manual_correction";
   summary: string;
-  detail?: string;
+  detail?: string | undefined;
 }
 
 export interface Commitment {
   id: string;
   merchant: string;
   /** Verified merchant domain, used for the web cancellation handoff. */
-  merchantDomain?: string;
+  merchantDomain?: string | undefined;
   /** Reviewed HTTPS management URL, when one is known. */
-  manageUrl?: string;
+  manageUrl?: string | undefined;
   planNickname: string;
   category: string;
   channel: PurchaseChannel;
@@ -115,7 +115,7 @@ export interface Commitment {
   /** Commit's or the user's own planning date. */
   reviewTargetDate: string | null;
   /** The user explicitly acknowledged a target later than the cutoff. */
-  lateTargetAcknowledged?: boolean;
+  lateTargetAcknowledged?: boolean | undefined;
   /** When service ceases, after a confirmed cancellation. */
   accessEndDate: string | null;
   /** Renewal stop date confirmed by the user. */
@@ -124,7 +124,7 @@ export interface Commitment {
   noticePeriodDays: number | null;
 
   /** The overdue / window-passed row was acknowledged by the user. */
-  windowAcknowledged?: boolean;
+  windowAcknowledged?: boolean | undefined;
 
   merchantTimezone: string;
   claims: FieldClaim[];

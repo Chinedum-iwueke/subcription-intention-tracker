@@ -279,6 +279,6 @@ export function projectedBills(c: Commitment, count: number): ISODate[] {
   if (!c.nextBillDate) return [];
   const out: ISODate[] = [c.nextBillDate];
   if (!c.terms.recurrence) return out;
-  for (let i = 1; i < count; i++) out.push(advance(out[i - 1], c.terms.recurrence));
+  for (let i = 1; i < count; i++) out.push(advance(out[i - 1]!, c.terms.recurrence));
   return out;
 }
