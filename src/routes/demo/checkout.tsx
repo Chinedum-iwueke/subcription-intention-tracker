@@ -82,7 +82,7 @@ function CheckoutDemo() {
       accessEndDate: null,
       renewalStopDate: null,
       noticePeriodDays: null,
-      managementUrl: "https://example.com/atlas-studio/billing",
+      manageUrl: "https://example.com/atlas-studio/billing",
       windowAcknowledged: false,
       lateTargetAcknowledged: false,
       sample: true,
