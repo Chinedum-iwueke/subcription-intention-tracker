@@ -1,13 +1,24 @@
 import { Link } from "@tanstack/react-router";
-import { CalendarDays, ListChecks, Plus, Settings, Layers } from "lucide-react";
+import {
+  CalendarDays,
+  Inbox,
+  ListChecks,
+  Plus,
+  Settings,
+  Layers,
+  PiggyBank,
+} from "lucide-react";
 import type { ReactNode } from "react";
 
+import { useCommitStore } from "@/lib/commit/store";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { to: "/upcoming", label: "Upcoming", icon: ListChecks },
   { to: "/calendar", label: "Calendar", icon: CalendarDays },
   { to: "/subscriptions", label: "Subscriptions", icon: Layers },
+  { to: "/spending", label: "Spending", icon: PiggyBank },
+  { to: "/review", label: "Review", icon: Inbox },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
