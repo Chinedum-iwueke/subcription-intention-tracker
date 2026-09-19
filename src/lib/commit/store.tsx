@@ -34,6 +34,7 @@ export const DEFAULT_SETTINGS: Settings = {
 interface State {
   commitments: Commitment[];
   settings: Settings;
+  reviewCandidates: ReviewCandidate[];
 }
 
 interface StoreValue extends State {
@@ -48,12 +49,23 @@ interface StoreValue extends State {
   confirmCancellation: (id: string, renewalStop: string | null, accessEnd: string | null) => void;
   setSettings: (s: Partial<Settings>) => void;
   resetDemo: () => void;
+  unreviewedCount: number;
+  setCandidateField: (
+    candidateId: string,
+    key: string,
+    patch: Partial<Pick<CandidateField, "decision" | "value">>,
+  ) => void;
+  resolveCandidate: (candidateId: string, resolution: string) => void;
 }
 
 const StoreContext = React.createContext<StoreValue | null>(null);
 
 function initialState(): State {
-  return { commitments: buildSampleCommitments(), settings: DEFAULT_SETTINGS };
+  return {
+    commitments: buildSampleCommitments(),
+    settings: DEFAULT_SETTINGS,
+    reviewCandidates: buildSampleCandidates(),
+  };
 }
 
 function entry(kind: Commitment["history"][number]["kind"], summary: string, detail?: string) {
