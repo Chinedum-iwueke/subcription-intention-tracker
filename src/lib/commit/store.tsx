@@ -1,10 +1,11 @@
 import * as React from "react";
 
 import { buildSampleCommitments } from "./fixtures";
+import { buildSampleCandidates, type CandidateField, type ReviewCandidate } from "./review";
 import { todayISO } from "./dates";
 import type { Commitment, Intention, Lifecycle } from "./types";
 
-const STORAGE_KEY = "commit.phase1.state.v1";
+const STORAGE_KEY = "commit.phase2.state.v1";
 
 export interface Settings {
   timezone: string;
