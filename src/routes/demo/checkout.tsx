@@ -75,7 +75,6 @@ function CheckoutDemo() {
         note: "Captured at checkout in the simulation.",
       },
       termHistory: [],
-      amountUnknownReason: null,
       nextBillDate: nextBill,
       trialEndDate: trialEnd,
       actionCutoffDate: cutoff,
