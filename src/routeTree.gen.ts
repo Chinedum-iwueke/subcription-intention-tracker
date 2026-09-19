@@ -16,6 +16,7 @@ import { Route as ReviewRouteImport } from './routes/review'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SpendingRouteImport } from './routes/spending'
 import { Route as UpcomingRouteImport } from './routes/upcoming'
+import { Route as DemoCheckoutRouteImport } from './routes/demo/checkout'
 import { Route as SubscriptionsIndexRouteImport } from './routes/subscriptions.index'
 import { Route as SubscriptionsIdRouteImport } from './routes/subscriptions.$id'
 
@@ -54,6 +55,11 @@ const UpcomingRoute = UpcomingRouteImport.update({
   path: '/upcoming',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DemoCheckoutRoute = DemoCheckoutRouteImport.update({
+  id: '/demo/checkout',
+  path: '/demo/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SubscriptionsIndexRoute = SubscriptionsIndexRouteImport.update({
   id: '/subscriptions/',
   path: '/subscriptions/',
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/spending': typeof SpendingRoute
   '/upcoming': typeof UpcomingRoute
+  '/demo/checkout': typeof DemoCheckoutRoute
   '/subscriptions/$id': typeof SubscriptionsIdRoute
   '/subscriptions/': typeof SubscriptionsIndexRoute
 }
@@ -84,6 +91,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/spending': typeof SpendingRoute
   '/upcoming': typeof UpcomingRoute
+  '/demo/checkout': typeof DemoCheckoutRoute
   '/subscriptions/$id': typeof SubscriptionsIdRoute
   '/subscriptions': typeof SubscriptionsIndexRoute
 }
@@ -96,6 +104,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/spending': typeof SpendingRoute
   '/upcoming': typeof UpcomingRoute
+  '/demo/checkout': typeof DemoCheckoutRoute
   '/subscriptions/$id': typeof SubscriptionsIdRoute
   '/subscriptions/': typeof SubscriptionsIndexRoute
 }
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/spending'
     | '/upcoming'
+    | '/demo/checkout'
     | '/subscriptions/$id'
     | '/subscriptions/'
   fileRoutesByTo: FileRoutesByTo
@@ -120,6 +130,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/spending'
     | '/upcoming'
+    | '/demo/checkout'
     | '/subscriptions/$id'
     | '/subscriptions'
   id:
@@ -131,6 +142,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/spending'
     | '/upcoming'
+    | '/demo/checkout'
     | '/subscriptions/$id'
     | '/subscriptions/'
   fileRoutesById: FileRoutesById
@@ -143,6 +155,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   SpendingRoute: typeof SpendingRoute
   UpcomingRoute: typeof UpcomingRoute
+  DemoCheckoutRoute: typeof DemoCheckoutRoute
   SubscriptionsIdRoute: typeof SubscriptionsIdRoute
   SubscriptionsIndexRoute: typeof SubscriptionsIndexRoute
 }
@@ -198,6 +211,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UpcomingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/demo/checkout': {
+      id: '/demo/checkout'
+      path: '/demo/checkout'
+      fullPath: '/demo/checkout'
+      preLoaderRoute: typeof DemoCheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/subscriptions/': {
       id: '/subscriptions/'
       path: '/subscriptions'
@@ -223,6 +243,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   SpendingRoute: SpendingRoute,
   UpcomingRoute: UpcomingRoute,
+  DemoCheckoutRoute: DemoCheckoutRoute,
   SubscriptionsIdRoute: SubscriptionsIdRoute,
   SubscriptionsIndexRoute: SubscriptionsIndexRoute,
 }
