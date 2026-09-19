@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AddRouteImport } from './routes/add'
 import { Route as CalendarRouteImport } from './routes/calendar'
+import { Route as ReviewRouteImport } from './routes/review'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SpendingRouteImport } from './routes/spending'
 import { Route as UpcomingRouteImport } from './routes/upcoming'
@@ -31,6 +32,11 @@ const AddRoute = AddRouteImport.update({
 const CalendarRoute = CalendarRouteImport.update({
   id: '/calendar',
   path: '/calendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReviewRoute = ReviewRouteImport.update({
+  id: '/review',
+  path: '/review',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -63,6 +69,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/add': typeof AddRoute
   '/calendar': typeof CalendarRoute
+  '/review': typeof ReviewRoute
   '/settings': typeof SettingsRoute
   '/spending': typeof SpendingRoute
   '/upcoming': typeof UpcomingRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/add': typeof AddRoute
   '/calendar': typeof CalendarRoute
+  '/review': typeof ReviewRoute
   '/settings': typeof SettingsRoute
   '/spending': typeof SpendingRoute
   '/upcoming': typeof UpcomingRoute
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/add': typeof AddRoute
   '/calendar': typeof CalendarRoute
+  '/review': typeof ReviewRoute
   '/settings': typeof SettingsRoute
   '/spending': typeof SpendingRoute
   '/upcoming': typeof UpcomingRoute
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/add'
     | '/calendar'
+    | '/review'
     | '/settings'
     | '/spending'
     | '/upcoming'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/add'
     | '/calendar'
+    | '/review'
     | '/settings'
     | '/spending'
     | '/upcoming'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/'
     | '/add'
     | '/calendar'
+    | '/review'
     | '/settings'
     | '/spending'
     | '/upcoming'
@@ -127,6 +139,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AddRoute: typeof AddRoute
   CalendarRoute: typeof CalendarRoute
+  ReviewRoute: typeof ReviewRoute
   SettingsRoute: typeof SettingsRoute
   SpendingRoute: typeof SpendingRoute
   UpcomingRoute: typeof UpcomingRoute
@@ -155,6 +168,13 @@ declare module '@tanstack/react-router' {
       path: '/calendar'
       fullPath: '/calendar'
       preLoaderRoute: typeof CalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/review': {
+      id: '/review'
+      path: '/review'
+      fullPath: '/review'
+      preLoaderRoute: typeof ReviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -199,6 +219,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AddRoute: AddRoute,
   CalendarRoute: CalendarRoute,
+  ReviewRoute: ReviewRoute,
   SettingsRoute: SettingsRoute,
   SpendingRoute: SpendingRoute,
   UpcomingRoute: UpcomingRoute,
