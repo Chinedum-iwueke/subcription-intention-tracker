@@ -33,6 +33,7 @@ export function AppShell({
   children: ReactNode;
   aside?: ReactNode;
 }) {
+  const { unreviewedCount } = useCommitStore();
   return (
     <div className="min-h-screen bg-background text-foreground">
       <a
