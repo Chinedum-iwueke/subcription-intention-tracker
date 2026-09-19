@@ -70,7 +70,7 @@ function CheckoutDemo() {
         id: "t-checkout",
         amountMinor: Math.round(Number(amount) * 100),
         currency: "EUR",
-        recurrence: { every: 1, unit: "month", anchorDay: Number(nextBill.slice(8, 10)) },
+        recurrence: { intervalCount: 1, intervalUnit: "month", anchorDate: nextBill },
         effectiveFrom: today,
         note: "Captured at checkout in the simulation.",
       },
