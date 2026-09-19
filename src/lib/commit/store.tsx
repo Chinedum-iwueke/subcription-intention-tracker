@@ -1,10 +1,11 @@
 import * as React from "react";
 
 import { buildSampleCommitments } from "./fixtures";
+import { buildSampleCandidates, type CandidateField, type ReviewCandidate } from "./review";
 import { todayISO } from "./dates";
 import type { Commitment, Intention, Lifecycle } from "./types";
 
-const STORAGE_KEY = "commit.phase1.state.v1";
+const STORAGE_KEY = "commit.phase2.state.v1";
 
 export interface Settings {
   timezone: string;
@@ -33,6 +34,7 @@ export const DEFAULT_SETTINGS: Settings = {
 interface State {
   commitments: Commitment[];
   settings: Settings;
+  reviewCandidates: ReviewCandidate[];
 }
 
 interface StoreValue extends State {
@@ -47,12 +49,23 @@ interface StoreValue extends State {
   confirmCancellation: (id: string, renewalStop: string | null, accessEnd: string | null) => void;
   setSettings: (s: Partial<Settings>) => void;
   resetDemo: () => void;
+  unreviewedCount: number;
+  setCandidateField: (
+    candidateId: string,
+    key: string,
+    patch: Partial<Pick<CandidateField, "decision" | "value">>,
+  ) => void;
+  resolveCandidate: (candidateId: string, resolution: string) => void;
 }
 
 const StoreContext = React.createContext<StoreValue | null>(null);
 
 function initialState(): State {
-  return { commitments: buildSampleCommitments(), settings: DEFAULT_SETTINGS };
+  return {
+    commitments: buildSampleCommitments(),
+    settings: DEFAULT_SETTINGS,
+    reviewCandidates: buildSampleCandidates(),
+  };
 }
 
 function entry(kind: Commitment["history"][number]["kind"], summary: string, detail?: string) {
@@ -79,6 +92,7 @@ export function CommitStoreProvider({ children }: { children: React.ReactNode })
           setState({
             commitments: parsed.commitments,
             settings: { ...DEFAULT_SETTINGS, ...parsed.settings },
+            reviewCandidates: parsed.reviewCandidates ?? buildSampleCandidates(),
           });
         }
       }
@@ -178,6 +192,26 @@ export function CommitStoreProvider({ children }: { children: React.ReactNode })
         })),
       setSettings: (s) => setState((prev) => ({ ...prev, settings: { ...prev.settings, ...s } })),
       resetDemo: () => setState(initialState()),
+      unreviewedCount: state.reviewCandidates.filter((c) => c.status === "unreviewed").length,
+      setCandidateField: (candidateId, key, patch) =>
+        setState((s) => ({
+          ...s,
+          reviewCandidates: s.reviewCandidates.map((c) =>
+            c.id === candidateId
+              ? {
+                  ...c,
+                  fields: c.fields.map((f) => (f.key === key ? { ...f, ...patch } : f)),
+                }
+              : c,
+          ),
+        })),
+      resolveCandidate: (candidateId, resolution) =>
+        setState((s) => ({
+          ...s,
+          reviewCandidates: s.reviewCandidates.map((c) =>
+            c.id === candidateId ? { ...c, status: "resolved" as const, resolution } : c,
+          ),
+        })),
     };
   }, [state, ready]);
 

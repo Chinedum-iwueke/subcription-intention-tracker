@@ -1,13 +1,24 @@
 import { Link } from "@tanstack/react-router";
-import { CalendarDays, ListChecks, Plus, Settings, Layers } from "lucide-react";
+import {
+  CalendarDays,
+  Inbox,
+  ListChecks,
+  Plus,
+  Settings,
+  Layers,
+  PiggyBank,
+} from "lucide-react";
 import type { ReactNode } from "react";
 
+import { useCommitStore } from "@/lib/commit/store";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { to: "/upcoming", label: "Upcoming", icon: ListChecks },
   { to: "/calendar", label: "Calendar", icon: CalendarDays },
   { to: "/subscriptions", label: "Subscriptions", icon: Layers },
+  { to: "/spending", label: "Spending", icon: PiggyBank },
+  { to: "/review", label: "Review", icon: Inbox },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
@@ -22,6 +33,7 @@ export function AppShell({
   children: ReactNode;
   aside?: ReactNode;
 }) {
+  const { unreviewedCount } = useCommitStore();
   return (
     <div className="min-h-screen bg-background text-foreground">
       <a
@@ -64,11 +76,25 @@ export function AppShell({
                   >
                     <Icon className="size-4 shrink-0" aria-hidden="true" />
                     {label}
+                    {to === "/review" && unreviewedCount > 0 ? (
+                      <span className="ml-auto rounded-full border border-border px-1.5 text-xs">
+                        <span aria-hidden="true">{unreviewedCount}</span>
+                        <span className="sr-only">{unreviewedCount} items need review</span>
+                      </span>
+                    ) : null}
                   </Link>
                 </li>
               ))}
             </ul>
           </nav>
+
+          <Link
+            to="/demo/checkout"
+            className="mt-4 hidden items-center gap-2.5 rounded-md border border-dashed border-border px-3 py-2 text-sm text-foreground/80 transition-colors hover:bg-accent lg:flex"
+          >
+            <Plus className="size-4 shrink-0" aria-hidden="true" />
+            Try the checkout simulation
+          </Link>
 
           <p className="mt-6 hidden rounded-md border border-dashed border-border p-3 text-xs leading-relaxed text-muted-foreground lg:block">
             Phase 1 demo. Every record is synthetic sample data. Commit never cancels anything for
