@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AddRouteImport } from './routes/add'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SpendingRouteImport } from './routes/spending'
 import { Route as UpcomingRouteImport } from './routes/upcoming'
 import { Route as SubscriptionsIndexRouteImport } from './routes/subscriptions.index'
 import { Route as SubscriptionsIdRouteImport } from './routes/subscriptions.$id'
@@ -37,6 +38,11 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SpendingRoute = SpendingRouteImport.update({
+  id: '/spending',
+  path: '/spending',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UpcomingRoute = UpcomingRouteImport.update({
   id: '/upcoming',
   path: '/upcoming',
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/add': typeof AddRoute
   '/calendar': typeof CalendarRoute
   '/settings': typeof SettingsRoute
+  '/spending': typeof SpendingRoute
   '/upcoming': typeof UpcomingRoute
   '/subscriptions/$id': typeof SubscriptionsIdRoute
   '/subscriptions/': typeof SubscriptionsIndexRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/add': typeof AddRoute
   '/calendar': typeof CalendarRoute
   '/settings': typeof SettingsRoute
+  '/spending': typeof SpendingRoute
   '/upcoming': typeof UpcomingRoute
   '/subscriptions/$id': typeof SubscriptionsIdRoute
   '/subscriptions': typeof SubscriptionsIndexRoute
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   '/add': typeof AddRoute
   '/calendar': typeof CalendarRoute
   '/settings': typeof SettingsRoute
+  '/spending': typeof SpendingRoute
   '/upcoming': typeof UpcomingRoute
   '/subscriptions/$id': typeof SubscriptionsIdRoute
   '/subscriptions/': typeof SubscriptionsIndexRoute
@@ -88,6 +97,7 @@ export interface FileRouteTypes {
     | '/add'
     | '/calendar'
     | '/settings'
+    | '/spending'
     | '/upcoming'
     | '/subscriptions/$id'
     | '/subscriptions/'
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/add'
     | '/calendar'
     | '/settings'
+    | '/spending'
     | '/upcoming'
     | '/subscriptions/$id'
     | '/subscriptions'
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/add'
     | '/calendar'
     | '/settings'
+    | '/spending'
     | '/upcoming'
     | '/subscriptions/$id'
     | '/subscriptions/'
@@ -116,6 +128,7 @@ export interface RootRouteChildren {
   AddRoute: typeof AddRoute
   CalendarRoute: typeof CalendarRoute
   SettingsRoute: typeof SettingsRoute
+  SpendingRoute: typeof SpendingRoute
   UpcomingRoute: typeof UpcomingRoute
   SubscriptionsIdRoute: typeof SubscriptionsIdRoute
   SubscriptionsIndexRoute: typeof SubscriptionsIndexRoute
@@ -151,6 +164,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/spending': {
+      id: '/spending'
+      path: '/spending'
+      fullPath: '/spending'
+      preLoaderRoute: typeof SpendingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/upcoming': {
       id: '/upcoming'
       path: '/upcoming'
@@ -180,6 +200,7 @@ const rootRouteChildren: RootRouteChildren = {
   AddRoute: AddRoute,
   CalendarRoute: CalendarRoute,
   SettingsRoute: SettingsRoute,
+  SpendingRoute: SpendingRoute,
   UpcomingRoute: UpcomingRoute,
   SubscriptionsIdRoute: SubscriptionsIdRoute,
   SubscriptionsIndexRoute: SubscriptionsIndexRoute,
