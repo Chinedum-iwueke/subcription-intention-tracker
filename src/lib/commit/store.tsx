@@ -192,6 +192,26 @@ export function CommitStoreProvider({ children }: { children: React.ReactNode })
         })),
       setSettings: (s) => setState((prev) => ({ ...prev, settings: { ...prev.settings, ...s } })),
       resetDemo: () => setState(initialState()),
+      unreviewedCount: state.reviewCandidates.filter((c) => c.status === "unreviewed").length,
+      setCandidateField: (candidateId, key, patch) =>
+        setState((s) => ({
+          ...s,
+          reviewCandidates: s.reviewCandidates.map((c) =>
+            c.id === candidateId
+              ? {
+                  ...c,
+                  fields: c.fields.map((f) => (f.key === key ? { ...f, ...patch } : f)),
+                }
+              : c,
+          ),
+        })),
+      resolveCandidate: (candidateId, resolution) =>
+        setState((s) => ({
+          ...s,
+          reviewCandidates: s.reviewCandidates.map((c) =>
+            c.id === candidateId ? { ...c, status: "resolved" as const, resolution } : c,
+          ),
+        })),
     };
   }, [state, ready]);
 
