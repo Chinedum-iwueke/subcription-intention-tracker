@@ -92,6 +92,7 @@ export function CommitStoreProvider({ children }: { children: React.ReactNode })
           setState({
             commitments: parsed.commitments,
             settings: { ...DEFAULT_SETTINGS, ...parsed.settings },
+            reviewCandidates: parsed.reviewCandidates ?? buildSampleCandidates(),
           });
         }
       }
