@@ -102,11 +102,11 @@ export function Panel({
   className,
   actions,
 }: {
-  title?: string;
-  description?: string;
+  title?: string | undefined;
+  description?: string | undefined;
   children: ReactNode;
-  className?: string;
-  actions?: ReactNode;
+  className?: string | undefined;
+  actions?: ReactNode | undefined;
 }) {
   return (
     <section className={cn("rounded-lg border border-border bg-paper p-5", className)}>

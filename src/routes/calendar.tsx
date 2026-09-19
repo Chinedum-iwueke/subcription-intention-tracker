@@ -120,9 +120,10 @@ function CalendarPage() {
       PageUp: -daysInMonth,
       PageDown: daysInMonth,
     };
-    if (e.key in map) {
+    const delta = map[e.key];
+    if (delta !== undefined) {
       e.preventDefault();
-      moveSelection(map[e.key]);
+      moveSelection(delta);
     }
     if (e.key === "Home") {
       e.preventDefault();
