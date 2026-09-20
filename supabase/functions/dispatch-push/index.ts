@@ -1,7 +1,7 @@
 // Private scheduled worker. Set PUSH_WORKER_TOKEN, VAPID_PUBLIC_KEY,
 // VAPID_PRIVATE_KEY, VAPID_SUBJECT, SUPABASE_URL and service-role key.
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import webpush from 'npm:web-push@3.6.7';
+import webpush from 'https://esm.sh/web-push@3.6.7?target=denonext';
 
 const required = (name: string) => {
   const value = Deno.env.get(name);

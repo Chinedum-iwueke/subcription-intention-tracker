@@ -1,7 +1,7 @@
 // Resend delivery status webhook. Disable JWT verification for this endpoint only;
 // Svix signature verification below authenticates the raw request instead.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { Resend } from "npm:resend@6.28.1";
+import { Resend } from "https://esm.sh/resend@6.28.1?target=denonext";
 
 const required = (name: string) => {
   const value = Deno.env.get(name);
