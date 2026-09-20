@@ -120,6 +120,8 @@ export interface Commitment {
   accessEndDate: string | null;
   /** Renewal stop date confirmed by the user. */
   renewalStopDate: string | null;
+  /** How the user knows renewal stopped; a handoff alone is not confirmation. */
+  cancellationBasis?: string | undefined;
   /** Evidenced notice period in days, when known. */
   noticePeriodDays: number | null;
 

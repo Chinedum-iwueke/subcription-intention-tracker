@@ -11,11 +11,15 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AddRouteImport } from './routes/add'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CalendarRouteImport } from './routes/calendar'
+import { Route as DiscoveryRouteImport } from './routes/discovery'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as ReviewRouteImport } from './routes/review'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SpendingRouteImport } from './routes/spending'
 import { Route as UpcomingRouteImport } from './routes/upcoming'
+import { Route as CaptureImportRouteImport } from './routes/capture/import'
 import { Route as DemoCheckoutRouteImport } from './routes/demo/checkout'
 import { Route as SubscriptionsIndexRouteImport } from './routes/subscriptions.index'
 import { Route as SubscriptionsIdRouteImport } from './routes/subscriptions.$id'
@@ -30,9 +34,24 @@ const AddRoute = AddRouteImport.update({
   path: '/add',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CalendarRoute = CalendarRouteImport.update({
   id: '/calendar',
   path: '/calendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiscoveryRoute = DiscoveryRouteImport.update({
+  id: '/discovery',
+  path: '/discovery',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReviewRoute = ReviewRouteImport.update({
@@ -55,6 +74,11 @@ const UpcomingRoute = UpcomingRouteImport.update({
   path: '/upcoming',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CaptureImportRoute = CaptureImportRouteImport.update({
+  id: '/capture/import',
+  path: '/capture/import',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DemoCheckoutRoute = DemoCheckoutRouteImport.update({
   id: '/demo/checkout',
   path: '/demo/checkout',
@@ -74,11 +98,15 @@ const SubscriptionsIdRoute = SubscriptionsIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/add': typeof AddRoute
+  '/auth': typeof AuthRoute
   '/calendar': typeof CalendarRoute
+  '/discovery': typeof DiscoveryRoute
+  '/onboarding': typeof OnboardingRoute
   '/review': typeof ReviewRoute
   '/settings': typeof SettingsRoute
   '/spending': typeof SpendingRoute
   '/upcoming': typeof UpcomingRoute
+  '/capture/import': typeof CaptureImportRoute
   '/demo/checkout': typeof DemoCheckoutRoute
   '/subscriptions/$id': typeof SubscriptionsIdRoute
   '/subscriptions/': typeof SubscriptionsIndexRoute
@@ -86,11 +114,15 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/add': typeof AddRoute
+  '/auth': typeof AuthRoute
   '/calendar': typeof CalendarRoute
+  '/discovery': typeof DiscoveryRoute
+  '/onboarding': typeof OnboardingRoute
   '/review': typeof ReviewRoute
   '/settings': typeof SettingsRoute
   '/spending': typeof SpendingRoute
   '/upcoming': typeof UpcomingRoute
+  '/capture/import': typeof CaptureImportRoute
   '/demo/checkout': typeof DemoCheckoutRoute
   '/subscriptions/$id': typeof SubscriptionsIdRoute
   '/subscriptions': typeof SubscriptionsIndexRoute
@@ -99,11 +131,15 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/add': typeof AddRoute
+  '/auth': typeof AuthRoute
   '/calendar': typeof CalendarRoute
+  '/discovery': typeof DiscoveryRoute
+  '/onboarding': typeof OnboardingRoute
   '/review': typeof ReviewRoute
   '/settings': typeof SettingsRoute
   '/spending': typeof SpendingRoute
   '/upcoming': typeof UpcomingRoute
+  '/capture/import': typeof CaptureImportRoute
   '/demo/checkout': typeof DemoCheckoutRoute
   '/subscriptions/$id': typeof SubscriptionsIdRoute
   '/subscriptions/': typeof SubscriptionsIndexRoute
@@ -113,11 +149,15 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/add'
+    | '/auth'
     | '/calendar'
+    | '/discovery'
+    | '/onboarding'
     | '/review'
     | '/settings'
     | '/spending'
     | '/upcoming'
+    | '/capture/import'
     | '/demo/checkout'
     | '/subscriptions/$id'
     | '/subscriptions/'
@@ -125,11 +165,15 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/add'
+    | '/auth'
     | '/calendar'
+    | '/discovery'
+    | '/onboarding'
     | '/review'
     | '/settings'
     | '/spending'
     | '/upcoming'
+    | '/capture/import'
     | '/demo/checkout'
     | '/subscriptions/$id'
     | '/subscriptions'
@@ -137,11 +181,15 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/add'
+    | '/auth'
     | '/calendar'
+    | '/discovery'
+    | '/onboarding'
     | '/review'
     | '/settings'
     | '/spending'
     | '/upcoming'
+    | '/capture/import'
     | '/demo/checkout'
     | '/subscriptions/$id'
     | '/subscriptions/'
@@ -150,11 +198,15 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AddRoute: typeof AddRoute
+  AuthRoute: typeof AuthRoute
   CalendarRoute: typeof CalendarRoute
+  DiscoveryRoute: typeof DiscoveryRoute
+  OnboardingRoute: typeof OnboardingRoute
   ReviewRoute: typeof ReviewRoute
   SettingsRoute: typeof SettingsRoute
   SpendingRoute: typeof SpendingRoute
   UpcomingRoute: typeof UpcomingRoute
+  CaptureImportRoute: typeof CaptureImportRoute
   DemoCheckoutRoute: typeof DemoCheckoutRoute
   SubscriptionsIdRoute: typeof SubscriptionsIdRoute
   SubscriptionsIndexRoute: typeof SubscriptionsIndexRoute
@@ -176,11 +228,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AddRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/calendar': {
       id: '/calendar'
       path: '/calendar'
       fullPath: '/calendar'
       preLoaderRoute: typeof CalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/discovery': {
+      id: '/discovery'
+      path: '/discovery'
+      fullPath: '/discovery'
+      preLoaderRoute: typeof DiscoveryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/review': {
@@ -211,6 +284,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UpcomingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/capture/import': {
+      id: '/capture/import'
+      path: '/capture/import'
+      fullPath: '/capture/import'
+      preLoaderRoute: typeof CaptureImportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/demo/checkout': {
       id: '/demo/checkout'
       path: '/demo/checkout'
@@ -238,11 +318,15 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AddRoute: AddRoute,
+  AuthRoute: AuthRoute,
   CalendarRoute: CalendarRoute,
+  DiscoveryRoute: DiscoveryRoute,
+  OnboardingRoute: OnboardingRoute,
   ReviewRoute: ReviewRoute,
   SettingsRoute: SettingsRoute,
   SpendingRoute: SpendingRoute,
   UpcomingRoute: UpcomingRoute,
+  CaptureImportRoute: CaptureImportRoute,
   DemoCheckoutRoute: DemoCheckoutRoute,
   SubscriptionsIdRoute: SubscriptionsIdRoute,
   SubscriptionsIndexRoute: SubscriptionsIndexRoute,

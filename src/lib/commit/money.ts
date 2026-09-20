@@ -1,4 +1,4 @@
-import type { Commitment, TermVersion } from "./types";
+import type { TermVersion } from "./types";
 
 export function formatMoney(amountMinor: number | null, currency: string): string {
   if (amountMinor === null) return "Unknown";
@@ -36,46 +36,4 @@ export function annualEquivalentMinor(term: TermVersion): number | null {
 export function monthlyEquivalentMinor(term: TermVersion): number | null {
   const annual = annualEquivalentMinor(term);
   return annual === null ? null : Math.round(annual / 12);
-}
-
-export interface CurrencyTotal {
-  currency: string;
-  monthlyMinor: number;
-  annualMinor: number;
-  counted: number;
-}
-
-/**
- * Group by original currency. EUR and USD are never added together.
- * Records with unknown amounts are excluded and reported separately.
- */
-export function coverageSummary(commitments: Commitment[]) {
-  const byCurrency = new Map<string, CurrencyTotal>();
-  let unknownAmounts = 0;
-
-  for (const c of commitments) {
-    if (c.lifecycle === "canceled" || c.lifecycle === "expired") continue;
-    const monthly = monthlyEquivalentMinor(c.terms);
-    if (monthly === null) {
-      unknownAmounts += 1;
-      continue;
-    }
-    const entry = byCurrency.get(c.terms.currency) ?? {
-      currency: c.terms.currency,
-      monthlyMinor: 0,
-      annualMinor: 0,
-      counted: 0,
-    };
-    entry.monthlyMinor += monthly;
-    entry.annualMinor += annualEquivalentMinor(c.terms) ?? 0;
-    entry.counted += 1;
-    byCurrency.set(c.terms.currency, entry);
-  }
-
-  return {
-    totals: [...byCurrency.values()].sort((a, b) => b.monthlyMinor - a.monthlyMinor),
-    unknownAmounts,
-    tracked: commitments.filter((c) => c.lifecycle !== "canceled" && c.lifecycle !== "expired")
-      .length,
-  };
 }

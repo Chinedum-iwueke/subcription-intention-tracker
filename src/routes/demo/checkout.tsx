@@ -41,21 +41,64 @@ const EXCERPTS: Record<string, string> = {
 
 function CheckoutDemo() {
   const today = todayISO();
-  const { add } = useCommitStore();
+  const { add, settings, mode } = useCommitStore();
   const navigate = useNavigate();
 
   const [captured, setCaptured] = React.useState(false);
   const [asked, setAsked] = React.useState(false);
   const [intention, setIntention] = React.useState<Intention>("review");
+  const [scenario, setScenario] = React.useState<"standard" | "unknown" | "failed">("standard");
+  const [target, setTarget] = React.useState("");
+  const [targetTouched, setTargetTouched] = React.useState(false);
+  const [draftSaved, setDraftSaved] = React.useState(false);
 
   const [amount, setAmount] = React.useState("18.00");
   const [trialEnd, setTrialEnd] = React.useState(addDays(today, 14));
   const [nextBill, setNextBill] = React.useState(addDays(today, 15));
   const [cutoff, setCutoff] = React.useState(addDays(today, 13));
 
-  const proposal = proposeTarget(intention, { cutoff, bill: nextBill, trialEnd });
+  const effectiveCutoff = scenario === "standard" ? cutoff : null;
+  const proposal = proposeTarget(intention, {
+    cutoff: effectiveCutoff,
+    bill: scenario === "failed" ? null : nextBill,
+    trialEnd: scenario === "failed" ? null : trialEnd,
+  }, settings);
+  const actionTarget = targetTouched ? target || null : proposal.date;
+
+  React.useEffect(() => {
+    try {
+      const raw = window.sessionStorage.getItem("commit.checkout.simulation.draft");
+      if (!raw) return;
+      const saved = JSON.parse(raw) as { amount: string; trialEnd: string; nextBill: string; cutoff: string; intention: Intention; scenario: "standard" | "unknown" | "failed"; target: string; targetTouched: boolean };
+      setAmount(saved.amount);
+      setTrialEnd(saved.trialEnd);
+      setNextBill(saved.nextBill);
+      setCutoff(saved.cutoff);
+      setIntention(saved.intention);
+      setScenario(saved.scenario);
+      setTarget(saved.target);
+      setTargetTouched(saved.targetTouched);
+      setCaptured(true);
+      setDraftSaved(true);
+    } catch { /* storage can be unavailable */ }
+  }, []);
+
+  function saveDraft() {
+    setDraftSaved(true);
+    try { window.sessionStorage.setItem("commit.checkout.simulation.draft", JSON.stringify({ amount, trialEnd, nextBill, cutoff, intention, scenario, target, targetTouched })); } catch { /* demo only */ }
+    toast("Simulation draft saved", { description: "Only this browser session remembers the draft. No active commitment was created." });
+  }
 
   function addCommitment() {
+    if (scenario === "failed") return;
+    if (!/^\d+(?:\.\d{1,2})?$/.test(amount) || !trialEnd || !nextBill || nextBill < trialEnd) {
+      toast.error("Check the amount, trial end, and first bill before adding this sample.");
+      return;
+    }
+    if (effectiveCutoff && actionTarget && actionTarget > effectiveCutoff) {
+      toast.error("Choose a target on or before the merchant cutoff in this simulation.");
+      return;
+    }
     const now = new Date().toISOString();
     const c: Commitment = {
       id: `atlas-studio-demo-${Math.random().toString(36).slice(2, 6)}`,
@@ -80,8 +123,8 @@ function CheckoutDemo() {
       merchantTimezone: "Europe/Dublin",
       createdAt: now,
       trialEndDate: trialEnd,
-      actionCutoffDate: cutoff,
-      reviewTargetDate: proposal.date,
+      actionCutoffDate: effectiveCutoff,
+      reviewTargetDate: intention === "keep" ? null : actionTarget,
       accessEndDate: null,
       renewalStopDate: null,
       noticePeriodDays: null,
@@ -90,31 +133,56 @@ function CheckoutDemo() {
       lateTargetAcknowledged: false,
       sample: true,
       claims: [
+        ...(amount !== "18.00" ? [{
+          field: "amount", label: "Recurring amount (original extraction)", value: "€18.00 per month",
+          origin: "browser_checkout" as const, capturedAt: now, verification: "unconfirmed" as const,
+          excerpt: EXCERPTS["amount"]!,
+        }] : []),
         {
           field: "amount",
           label: "Recurring amount",
           value: `€${amount} per month`,
-          origin: "browser_checkout",
+          origin: amount === "18.00" ? "browser_checkout" : "manual",
           capturedAt: now,
           verification: "confirmed",
           excerpt: EXCERPTS["amount"]!,
         },
+        ...(trialEnd !== addDays(today, 14) ? [{
+          field: "trial_end", label: "Trial end (original extraction)", value: addDays(today, 14),
+          origin: "browser_checkout" as const, capturedAt: now, verification: "unconfirmed" as const,
+          excerpt: EXCERPTS["trialEnd"]!,
+        }] : []),
         {
           field: "trial_end",
           label: "Trial end",
           value: trialEnd,
-          origin: "browser_checkout",
+          origin: trialEnd === addDays(today, 14) ? "browser_checkout" : "manual",
           capturedAt: now,
           verification: "confirmed",
           excerpt: EXCERPTS["trialEnd"]!,
         },
+        ...(nextBill !== addDays(today, 15) ? [{
+          field: "next_bill", label: "First bill (original extraction)", value: addDays(today, 15),
+          origin: "browser_checkout" as const, capturedAt: now, verification: "unconfirmed" as const,
+          excerpt: EXCERPTS["nextBill"]!,
+        }] : []),
+        {
+          field: "next_bill", label: "First bill", value: nextBill,
+          origin: nextBill === addDays(today, 15) ? "browser_checkout" : "manual",
+          capturedAt: now, verification: "confirmed", excerpt: EXCERPTS["nextBill"]!,
+        },
+        ...(effectiveCutoff && cutoff !== addDays(today, 13) ? [{
+          field: "cutoff", label: "Merchant action cutoff (original extraction)", value: addDays(today, 13),
+          origin: "browser_checkout" as const, capturedAt: now, verification: "unconfirmed" as const,
+          excerpt: EXCERPTS["cutoff"]!,
+        }] : []),
         {
           field: "cutoff",
           label: "Merchant action cutoff",
-          value: cutoff,
-          origin: "browser_checkout",
+          value: effectiveCutoff,
+          origin: !effectiveCutoff || cutoff === addDays(today, 13) ? "browser_checkout" : "manual",
           capturedAt: now,
-          verification: "confirmed",
+          verification: effectiveCutoff ? "confirmed" : "unconfirmed",
           excerpt: EXCERPTS["cutoff"]!,
         },
       ],
@@ -128,7 +196,13 @@ function CheckoutDemo() {
         },
       ],
     };
+    if (mode === "cloud") {
+      toast("Simulation complete", { description: "This sample stays out of your private account. Add a real commitment from the Add page." });
+      return;
+    }
     add(c);
+    setDraftSaved(false);
+    try { window.sessionStorage.removeItem("commit.checkout.simulation.draft"); } catch { /* demo only */ }
     toast.success("Atlas Studio added", {
       description: "Sample record created from the simulation.",
     });
@@ -190,6 +264,7 @@ function CheckoutDemo() {
             className="w-full rounded-lg border border-border bg-sidebar p-5 shadow-lg lg:w-[380px]"
           >
             <p className="font-display text-xl leading-none">Commit</p>
+            {draftSaved ? <p className="mt-2 text-xs text-trial">A simulation draft is saved in this browser session. No purchase or subscription was recorded.</p> : null}
             {!captured ? (
               <p className="mt-3 text-sm text-muted-foreground">
                 Start the trial on the left and Commit will show what it would have read from this
@@ -197,11 +272,21 @@ function CheckoutDemo() {
               </p>
             ) : (
               <div className="mt-4 space-y-4">
+                <fieldset>
+                  <legend className="text-sm font-medium">Extraction scenario</legend>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {(["standard", "unknown", "failed"] as const).map((value) => (
+                      <Button key={value} type="button" size="sm" variant={scenario === value ? "default" : "outline"} aria-pressed={scenario === value} onClick={() => { setScenario(value); setTargetTouched(false); }}>
+                        {value === "standard" ? "Terms found" : value === "unknown" ? "Cutoff missing" : "Extraction failed"}
+                      </Button>
+                    ))}
+                  </div>
+                </fieldset>
                 <p className="text-sm">
-                  Commit read these terms from the page. Correct anything that looks wrong — your
-                  edit wins.
+                  {scenario === "failed" ? "The simulation could not extract reliable terms. Save a draft or enter the terms manually; unknown dates stay unknown." : "Commit read these terms from the page. Correct anything that looks wrong — your edit wins."}
                 </p>
 
+                {scenario !== "failed" ? <>
                 <Field
                   id="amount"
                   label="Recurring amount (EUR)"
@@ -225,14 +310,15 @@ function CheckoutDemo() {
                   onChange={setNextBill}
                   excerpt={EXCERPTS["nextBill"]!}
                 />
-                <Field
+                </> : null}
+                {scenario === "standard" ? <Field
                   id="cutoff"
                   label="Cancel by (merchant cutoff)"
                   type="date"
                   value={cutoff}
                   onChange={setCutoff}
                   excerpt={EXCERPTS["cutoff"]!}
-                />
+                /> : <p className="rounded-md border border-dashed border-border p-3 text-xs">Merchant cutoff: Not found. This is not a confirmed safe deadline.</p>}
 
                 <fieldset>
                   <legend className="text-sm font-medium">What do you intend to do?</legend>
@@ -253,10 +339,10 @@ function CheckoutDemo() {
                 </fieldset>
 
                 <p className="rounded-md border border-dashed border-border p-3 text-xs leading-relaxed">
-                  {proposal.date ? (
+                  {actionTarget ? (
                     <>
-                      Proposed target:{" "}
-                      <strong className="font-medium">{formatLongDate(proposal.date)}</strong> —{" "}
+                      Planning target:{" "}
+                      <strong className="font-medium">{formatLongDate(actionTarget)}</strong> —{" "}
                       {proposal.basis}.
                     </>
                   ) : (
@@ -265,7 +351,13 @@ function CheckoutDemo() {
                   Buffers are a planning convenience you can change, not the merchant’s deadline.
                 </p>
 
-                {!asked ? (
+                {intention !== "keep" ? <div><Label htmlFor="demo-target">Edit planning target</Label><Input id="demo-target" type="date" className="mt-1" value={targetTouched ? target : proposal.date ?? ""} onChange={(e) => { setTarget(e.target.value); setTargetTouched(true); }} /></div> : null}
+                <p className="rounded-md border border-border p-3 text-xs" aria-live="polite">
+                  Preview: {intention === "keep" ? "Keep this plan" : `${intention === "cancel" ? "Plan to cancel" : "Review"} ${actionTarget ? `by ${formatLongDate(actionTarget)}` : "when a date is known"}`} · {scenario === "failed" ? "Bill date and amount unknown" : `Bills EUR ${amount} on ${formatLongDate(nextBill)}`} · Outbound reminders off. {intention === "cancel" ? "You still cancel with the provider." : ""}
+                </p>
+                <Button type="button" variant="outline" className="w-full" onClick={saveDraft}>Save simulation draft</Button>
+
+                {scenario === "failed" ? <p className="text-xs text-muted-foreground">Extraction failed. Save a simulation draft or use manual entry to continue.</p> : !asked ? (
                   <Button className="w-full" onClick={() => setAsked(true)}>
                     Continue
                   </Button>
@@ -285,6 +377,8 @@ function CheckoutDemo() {
                         onClick={() => {
                           setAsked(false);
                           setCaptured(false);
+                          setDraftSaved(false);
+                          try { window.sessionStorage.removeItem("commit.checkout.simulation.draft"); } catch { /* demo only */ }
                           toast("Discarded", { description: "Nothing was added." });
                         }}
                       >

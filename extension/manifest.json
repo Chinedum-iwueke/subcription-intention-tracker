@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "Commit capture",
+  "version": "0.1.0",
+  "description": "Capture recurring purchase terms for review in Commit.",
+  "action": { "default_popup": "popup.html", "default_title": "Capture with Commit" },
+  "background": { "service_worker": "background.js" },
+  "options_page": "options.html",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "optional_host_permissions": ["https://checkout.stripe.com/*", "https://*.paddle.com/*"],
+  "host_permissions": []
+}

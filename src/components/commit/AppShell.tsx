@@ -7,6 +7,7 @@ import {
   Settings,
   Layers,
   PiggyBank,
+  Search,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -19,6 +20,7 @@ const NAV = [
   { to: "/subscriptions", label: "Subscriptions", icon: Layers },
   { to: "/spending", label: "Spending", icon: PiggyBank },
   { to: "/review", label: "Review", icon: Inbox },
+  { to: "/discovery", label: "Discover", icon: Search },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
@@ -33,7 +35,16 @@ export function AppShell({
   children: ReactNode;
   aside?: ReactNode;
 }) {
-  const { unreviewedCount } = useCommitStore();
+  const { unreviewedCount, mode, userEmail, syncError, conflict, retryCloud, commitments, reviewCandidates, settings } = useCommitStore();
+  function exportDraft() {
+    const file = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), commitments, reviewCandidates, settings }, null, 2)], { type: "application/json" });
+    const href = URL.createObjectURL(file);
+    const link = document.createElement("a");
+    link.href = href;
+    link.download = "commit-export.json";
+    link.click();
+    URL.revokeObjectURL(href);
+  }
   return (
     <div className="min-h-screen bg-background text-foreground">
       <a
@@ -95,14 +106,16 @@ export function AppShell({
             <Plus className="size-4 shrink-0" aria-hidden="true" />
             Try the checkout simulation
           </Link>
+          <Link to="/onboarding" className="mt-3 hidden text-xs text-muted-foreground underline lg:block">Getting started</Link>
 
           <p className="mt-6 hidden rounded-md border border-dashed border-border p-3 text-xs leading-relaxed text-muted-foreground lg:block">
-            Phase 1 demo. Every record is synthetic sample data. Commit never cancels anything for
-            you and sends no reminders here.
+            {mode === "demo" ? "Demo mode. Sample records stay in this browser. No reminders are sent." : userEmail ? `Private account: ${userEmail}. Commit does not cancel subscriptions for you.` : "Checkout simulation. No sample records enter a private account."}
           </p>
         </header>
 
         <main id="main" className="min-w-0 flex-1 px-4 py-6 sm:px-7 sm:py-9">
+          {syncError && <div role="alert" className="mb-5 rounded-md border border-destructive p-3 text-sm text-destructive">Save or load issue: {syncError} <button type="button" className="ml-2 underline" onClick={exportDraft}>Export current data</button>{!conflict ? <button type="button" className="ml-3 underline" onClick={retryCloud}>Retry save</button> : null}</div>}
+          {conflict && <details className="mb-5 rounded-md border border-destructive p-3 text-sm"><summary>Compare your {conflict.kind} edit with the saved version</summary><p className="mt-2">Export your current data before reloading. Review both versions and reapply the intended changes.</p><div className="mt-3 grid gap-3 md:grid-cols-2"><pre className="max-h-64 overflow-auto whitespace-pre-wrap text-xs">Your edit: {JSON.stringify(conflict.local, null, 2)}</pre><pre className="max-h-64 overflow-auto whitespace-pre-wrap text-xs">Saved version: {JSON.stringify(conflict.remote, null, 2)}</pre></div></details>}
           <div className="mb-7 max-w-2xl">
             <h1 className="text-3xl sm:text-4xl">{title}</h1>
             {lede ? <p className="mt-2 text-sm text-muted-foreground">{lede}</p> : null}

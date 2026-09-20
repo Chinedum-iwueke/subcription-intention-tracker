@@ -7,7 +7,8 @@ import { SampleTag } from "@/components/commit/badges";
 import { Button } from "@/components/ui/button";
 import { addDays, formatDayMonth } from "@/lib/commit/dates";
 import { activeTrials, buildUpcoming } from "@/lib/commit/derive";
-import { coverageSummary, formatMoney } from "@/lib/commit/money";
+import { formatMoney } from "@/lib/commit/money";
+import { buildCoverage } from "@/lib/commit/spending";
 import { useCommitStore, useToday } from "@/lib/commit/store";
 
 export const Route = createFileRoute("/upcoming")({
@@ -42,7 +43,7 @@ function UpcomingPage() {
   const today = useToday();
   const { buckets, beyondHorizon } = buildUpcoming(commitments, today);
   const trials = activeTrials(commitments, today);
-  const coverage = coverageSummary(commitments);
+  const coverage = buildCoverage(commitments);
   const total = buckets.reduce((n, b) => n + b.items.length, 0);
 
   return (
@@ -54,13 +55,13 @@ function UpcomingPage() {
           <Panel title="Coverage" description="Sample records only. Nothing here is a real charge.">
             <p className="text-sm">
               Based on{" "}
-              <strong className="font-medium">{coverage.tracked} tracked commitments</strong>.
+              <strong className="font-medium">{coverage.inScope} active or trial commitments</strong>.
             </p>
             <ul className="mt-3 space-y-2 text-sm">
-              {coverage.totals.map((t) => (
+              {coverage.groups.map((t) => (
                 <li key={t.currency} className="flex items-baseline justify-between gap-3">
                   <span className="text-muted-foreground">
-                    {t.currency} · {t.counted} records
+                    {t.currency} · {t.lines.length} records
                   </span>
                   <span className="font-mono text-sm">
                     {formatMoney(t.monthlyMinor, t.currency)} / month
@@ -69,9 +70,9 @@ function UpcomingPage() {
               ))}
             </ul>
             <p className="mt-3 text-xs text-muted-foreground">
-              Currencies are grouped, never added together. {coverage.unknownAmounts} record
-              {coverage.unknownAmounts === 1 ? " has" : "s have"} an unknown or variable amount and
-              {coverage.unknownAmounts === 1 ? " is" : " are"} excluded from these figures.
+              Currencies are grouped, never added together. {coverage.unpriced.length} record
+              {coverage.unpriced.length === 1 ? " has" : "s have"} an unknown price or schedule and
+              {coverage.unpriced.length === 1 ? " is" : " are"} excluded from these figures.
             </p>
             <div className="mt-4">
               <SampleTag />

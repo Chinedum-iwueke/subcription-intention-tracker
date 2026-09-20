@@ -224,7 +224,7 @@ function DetailPage() {
 // ------------------------------------------------------------- intention
 
 function IntentionControl({ commitment: c, today }: { commitment: Commitment; today: string }) {
-  const { setIntention } = useCommitStore();
+  const { setIntention, settings } = useCommitStore();
   const [choice, setChoice] = React.useState<Intention>(c.intention);
   const [target, setTarget] = React.useState<string>(c.reviewTargetDate ?? "");
   const [ack, setAck] = React.useState(Boolean(c.lateTargetAcknowledged));
@@ -238,7 +238,7 @@ function IntentionControl({ commitment: c, today }: { commitment: Commitment; to
     cutoff: c.actionCutoffDate,
     bill: c.nextBillDate,
     trialEnd: c.trialEndDate,
-  });
+  }, settings);
 
   const tooLate = Boolean(c.actionCutoffDate && target && target > c.actionCutoffDate);
   const blocked = tooLate && !ack;
@@ -262,7 +262,7 @@ function IntentionControl({ commitment: c, today }: { commitment: Commitment; to
                   cutoff: c.actionCutoffDate,
                   bill: c.nextBillDate,
                   trialEnd: c.trialEndDate,
-                });
+                }, settings);
                 setTarget(p.date ?? "");
               }}
             >
@@ -347,9 +347,12 @@ function IntentionControl({ commitment: c, today }: { commitment: Commitment; to
 // -------------------------------------------------- cancellation playbook
 
 function CancellationPlaybook({ commitment: c }: { commitment: Commitment }) {
-  const { startCancellation, confirmCancellation } = useCommitStore();
+  const { startCancellation, confirmCancellation, reopenCancellation } = useCommitStore();
   const [renewalStop, setRenewalStop] = React.useState(c.renewalStopDate ?? todayISO());
   const [accessEnd, setAccessEnd] = React.useState(c.accessEndDate ?? "");
+  const [basis, setBasis] = React.useState(c.cancellationBasis ?? "");
+  const [correctionReason, setCorrectionReason] = React.useState("");
+  const [correctedBill, setCorrectedBill] = React.useState("");
 
   const steps =
     c.channel === "apple_app_store"
@@ -451,10 +454,16 @@ function CancellationPlaybook({ commitment: c }: { commitment: Commitment }) {
               />
             </div>
           </div>
+          <div className="mt-3 max-w-md">
+            <Label htmlFor="cancellation-basis">How do you know cancellation completed?</Label>
+            <Input id="cancellation-basis" value={basis} maxLength={300} placeholder="Confirmation email or provider screen" onChange={(e) => setBasis(e.target.value)} />
+            <p className="mt-1 text-xs text-muted-foreground">Record the source you checked. Opening a provider page is not enough.</p>
+          </div>
           <Button
             className="mt-4"
+            disabled={!basis.trim()}
             onClick={() => {
-              confirmCancellation(c.id, renewalStop || null, accessEnd || null);
+              confirmCancellation(c.id, renewalStop || null, accessEnd || null, basis.trim());
               toast.success("Cancellation confirmed by you", {
                 description: "Recorded as your confirmation, not as provider-verified evidence.",
               });
@@ -466,13 +475,18 @@ function CancellationPlaybook({ commitment: c }: { commitment: Commitment }) {
       ) : null}
 
       {c.cancellation === "confirmed" ? (
-        <p className="mt-5 rounded-md border border-trial/40 bg-trial-soft p-3 text-sm text-trial">
+        <div className="mt-5 rounded-md border border-trial/40 bg-trial-soft p-3 text-sm text-trial"><p>
           Cancellation confirmed by you. Renewal stops{" "}
           {c.renewalStopDate ? formatLongDate(c.renewalStopDate) : "on an unrecorded date"}, and
           access continues until{" "}
           {c.accessEndDate ? formatLongDate(c.accessEndDate) : "an unrecorded date"}. Confirmed
           renewal-stop does not erase past payments.
-        </p>
+          {c.cancellationBasis ? ` Basis: ${c.cancellationBasis}.` : ""}
+        </p><details className="mt-3"><summary className="cursor-pointer underline">Correct this confirmation</summary>
+          <div className="mt-3 max-w-md space-y-3"><div><Label htmlFor="correction-reason">Why is it still active?</Label><Input id="correction-reason" value={correctionReason} maxLength={300} onChange={(e) => setCorrectionReason(e.target.value)} /></div>
+          <div><Label htmlFor="corrected-bill">Next bill, if known</Label><Input id="corrected-bill" type="date" value={correctedBill} onChange={(e) => setCorrectedBill(e.target.value)} /></div>
+          <Button variant="outline" disabled={!correctionReason.trim()} onClick={() => { reopenCancellation(c.id, correctedBill || null, correctionReason.trim()); toast.success("Confirmation corrected"); }}>Record correction</Button></div>
+        </details></div>
       ) : null}
     </Panel>
   );
@@ -599,7 +613,8 @@ function Row({ label, value }: { label: string; value: string }) {
 // -------------------------------------------------------------- reminders
 
 function RemindersPreview({ commitment: c, today }: { commitment: Commitment; today: string }) {
-  const { settings } = useCommitStore();
+  const { settings, mode } = useCommitStore();
+  const emailAvailable = mode === "cloud" && import.meta.env["VITE_COMMIT_EMAIL_AVAILABLE"] === "true";
   const action = nextAction(c, today);
   const bills = projectedBills(c, 4);
 
@@ -607,7 +622,7 @@ function RemindersPreview({ commitment: c, today }: { commitment: Commitment; to
     <>
       <Panel
         title="Scheduled prompts"
-        description="Preview only. Outbound delivery is off in this phase, and in-app prompts never depend on it."
+        description={emailAvailable && settings.outboundEnabled ? "One optional email is scheduled for the current action target. In-app actions remain visible regardless of delivery." : "In-app action preview. Outbound email is off for this account or installation."}
       >
         {action.date ? (
           <ul className="space-y-3 text-sm">
@@ -616,23 +631,17 @@ function RemindersPreview({ commitment: c, today }: { commitment: Commitment; to
               {String(settings.deliveryHour).padStart(2, "0")}:00 — “You planned to{" "}
               {c.intention === "cancel" ? "cancel" : "review"} {c.merchant}.”
             </li>
-            {c.actionCutoffDate ? (
-              <li>
-                <strong className="font-medium">{formatLongDate(c.actionCutoffDate)}</strong> — one
-                follow-up if the decision is still unresolved.
-              </li>
-            ) : null}
           </ul>
         ) : (
           <p className="text-sm text-muted-foreground">
             {c.intention === "keep"
-              ? "Keep has no recurring decision prompts. You can enable a pre-bill digest in Settings."
+              ? "Keep has no decision prompt."
               : "No dated action, so no prompt can be scheduled."}
           </p>
         )}
         <p className="mt-4 text-xs text-muted-foreground">
-          Snoozing changes a reminder, never a contractual cutoff. Opening cancellation guidance does
-          not close an escalation — only a decision, a confirmation, or an acknowledgement does.
+          Snoozing a queued email in Settings changes delivery time, never the contractual cutoff.
+          Opening cancellation guidance does not confirm completion.
         </p>
       </Panel>
 

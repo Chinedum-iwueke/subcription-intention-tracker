@@ -2,7 +2,7 @@
 // conflicts. Nothing here ever enters the active inventory without an explicit
 // human decision, and a rejected field stays unknown rather than becoming zero.
 
-import { addDays, todayISO } from "./dates";
+import { addDays, parseISODate, toISODate, todayISO } from "./dates";
 import type {
   Commitment,
   Intention,
@@ -34,6 +34,7 @@ export interface CandidateField {
 
 export interface ReviewCandidate {
   id: string;
+  intendedIntention?: Intention;
   kind: CandidateKind;
   merchant: string;
   planNickname: string;
@@ -42,6 +43,17 @@ export interface ReviewCandidate {
   currency: string;
   /** Where the claims came from, in plain words. */
   sourceLabel: string;
+  discoveryConnectionId?: string;
+  confidence?: "medium" | "high";
+  sample?: boolean;
+  artifactPath?: string;
+  artifactSha256?: string;
+  artifactExpiredAt?: string;
+  ocrConsentAt?: string;
+  ocrProcessor?: string;
+  ocrRegion?: string;
+  processingState?: "queued" | "extracting" | "needs_review" | "failed" | "completed";
+  nonRecurring?: boolean;
   capturedAt: string;
   /** The raw-ish source text shown beside the extracted claims. */
   sourceExcerpt: string[];
@@ -55,19 +67,36 @@ export interface ReviewCandidate {
 
 export function fieldValue(c: ReviewCandidate, key: string): string | null {
   const f = c.fields.find((x) => x.key === key);
-  if (!f || f.decision === "rejected") return null;
+  if (!f || (f.decision !== "accepted" && f.decision !== "edited")) return null;
   return f.value;
+}
+
+export function pendingFields(c: ReviewCandidate): CandidateField[] {
+  return c.fields.filter((f) => f.decision === "pending");
+}
+
+export function fieldError(f: CandidateField): string | null {
+  if (f.decision === "pending" || f.decision === "rejected" || f.value === null) return null;
+  if (f.kind === "money" && !/^\d+(?:\.\d{1,2})?$/.test(f.value))
+    return `${f.label} must be a nonnegative amount with at most two decimal places.`;
+  if (f.kind === "date" && (!/^\d{4}-\d{2}-\d{2}$/.test(f.value) || toISODate(parseISODate(f.value)) !== f.value))
+    return `${f.label} must be a calendar date.`;
+  if (f.kind === "interval" && !/^[1-9]\d*\s*(day|week|month|year)s?$/i.test(f.value))
+    return `${f.label} must look like “1 month” or “4 weeks”.`;
+  if (f.key === "notice_days" && (!/^\d+$/.test(f.value) || Number(f.value) > 366))
+    return "Notice period must be a whole number from 0 to 366 days.";
+  return null;
 }
 
 function parseMoneyMinor(value: string | null): number | null {
   if (!value) return null;
-  const n = Number(value.replace(/[^0-9.]/g, ""));
+  const n = Number(value);
   return Number.isFinite(n) ? Math.round(n * 100) : null;
 }
 
 function parseInterval(value: string | null): { intervalCount: number; intervalUnit: IntervalUnit } | null {
   if (!value) return null;
-  const m = /^(\d+)\s*(day|week|month|year)/i.exec(value.trim());
+  const m = /^([1-9]\d*)\s*(day|week|month|year)s?$/i.exec(value.trim());
   if (!m) return null;
   return { intervalCount: Number(m[1]), intervalUnit: m[2]!.toLowerCase() as IntervalUnit };
 }
@@ -114,18 +143,28 @@ export function candidateToCommitment(
     renewalStopDate: null,
     noticePeriodDays: null,
     merchantTimezone: "Europe/Dublin",
-    claims: c.fields
-      .filter((f) => f.decision !== "rejected")
-      .map((f) => ({
+    claims: c.fields.flatMap((f) => {
+      if (f.decision === "rejected" || f.decision === "pending") return [];
+      const original = f.decision === "edited" ? [{
+        field: f.key,
+        label: `${f.label} (original extraction)`,
+        value: f.extracted,
+        origin: f.origin,
+        capturedAt: c.capturedAt,
+        verification: "unconfirmed" as const,
+        excerpt: f.excerpt,
+      }] : [];
+      return [...original, {
         field: f.key,
         label: f.label,
         value: f.value,
         origin: f.decision === "edited" ? ("manual" as OriginType) : f.origin,
         capturedAt: c.capturedAt,
-        verification: f.decision === "pending" ? ("unconfirmed" as const) : ("confirmed" as const),
+        verification: "confirmed" as const,
         excerpt: f.excerpt,
         unknownReason: f.value === null ? ("no_evidence" as const) : undefined,
-      })),
+      }];
+      }),
     history: [
       {
         id: `h-${Math.random().toString(36).slice(2, 8)}`,
@@ -136,7 +175,7 @@ export function candidateToCommitment(
       },
     ],
     createdAt: new Date().toISOString(),
-    sample: true,
+    sample: c.sample ?? true,
   };
 }
 
@@ -242,6 +281,7 @@ export function buildSampleCandidates(): ReviewCandidate[] {
       fields: [
         field("amount", "Recurring amount", "money", "149.00", "“the annual price will be €149.00”", "provider_notice", "129.00"),
         field("notice_days", "Notice period (days)", "text", "14", "“notice period is changing from 30 days to 14 days”", "provider_notice", "30"),
+        field("cutoff", "Merchant action cutoff", "date", d(44), "14 days before the next renewal shown on the existing record; verify this derived date.", "provider_notice", d(28)),
       ],
       status: "unreviewed",
     },
@@ -266,6 +306,43 @@ export function buildSampleCandidates(): ReviewCandidate[] {
         field("next_bill", "Next bill date", "date", d(21), "“Next invoice issues on " + d(21) + "”", "receipt"),
       ],
       status: "unreviewed",
+    },
+    ...(["Design", "Storage"] as const).map((plan, index): ReviewCandidate => ({
+      id: `cand-cedar-${plan.toLowerCase()}`,
+      kind: "new",
+      merchant: "Cedar Works",
+      planNickname: `${plan} plan`,
+      category: "Software",
+      channel: "web",
+      currency: "EUR",
+      sourceLabel: "Two-plan invoice simulation",
+      capturedAt: ago(3),
+      sourceExcerpt: [
+        "Cedar Works — one invoice, two independent recurring plans",
+        `Design: €12 monthly from ${d(18)}.`,
+        `Storage: €5 monthly from ${d(18)}.`,
+      ],
+      fields: [
+        field("amount", "Recurring amount", "money", index === 0 ? "12.00" : "5.00", `${plan} plan amount on the invoice.`, "receipt"),
+        field("interval", "Billing interval", "interval", "1 month", `${plan} renews monthly.`, "receipt"),
+        field("next_bill", "Next bill date", "date", d(18), `${plan} next bills on ${d(18)}.`, "receipt"),
+      ],
+      status: "unreviewed",
+    })),
+    {
+      id: "cand-one-off-receipt",
+      kind: "new",
+      merchant: "Paper Lantern",
+      planNickname: "One-time purchase",
+      category: "Shopping",
+      channel: "web",
+      currency: "EUR",
+      sourceLabel: "One-off receipt simulation",
+      capturedAt: ago(1),
+      sourceExcerpt: ["Paper Lantern — receipt for a single €15 purchase.", "No recurring plan or renewal date is stated."],
+      fields: [field("amount", "Receipt amount", "money", "15.00", "One-time payment of €15.", "receipt")],
+      status: "unreviewed",
+      nonRecurring: true,
     },
   ];
 }

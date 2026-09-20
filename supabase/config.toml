@@ -1,0 +1,26 @@
+[functions.dispatch-reminders]
+verify_jwt = false # The worker verifies WORKER_TOKEN itself.
+
+[functions.reminder-webhook]
+verify_jwt = false # Resend Svix signature authenticates the raw body.
+
+[functions.parse-evidence]
+verify_jwt = true
+
+[functions.purge-evidence]
+verify_jwt = false # The worker verifies RETENTION_WORKER_TOKEN itself.
+
+[functions.calendar-feed]
+verify_jwt = false # A revocable random bearer token authenticates the feed.
+
+[functions.dispatch-push]
+verify_jwt = false # The worker verifies PUSH_WORKER_TOKEN itself.
+
+[functions.discovery-source]
+verify_jwt = true
+
+[functions.gmail-discovery-callback]
+verify_jwt = false # One-time OAuth state authenticates the callback.
+
+[functions.sync-discovery]
+verify_jwt = false # The worker verifies DISCOVERY_WORKER_TOKEN itself.

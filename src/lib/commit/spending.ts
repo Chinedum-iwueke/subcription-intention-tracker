@@ -5,7 +5,13 @@
 import { addDays, occurrencesBetween, parseISODate, toISODate, todayISO, type ISODate } from "./dates";
 import { isResolved } from "./derive";
 import { annualEquivalentMinor, monthlyEquivalentMinor } from "./money";
-import type { Commitment, UnknownReason } from "./types";
+import type { Commitment, TermVersion, UnknownReason } from "./types";
+
+export function termAt(c: Commitment, date: ISODate): TermVersion {
+  return [c.terms, ...c.termHistory]
+    .filter((term) => term.effectiveFrom <= date && (!term.effectiveTo || term.effectiveTo >= date))
+    .sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom))[0] ?? c.terms;
+}
 
 export interface CurrencyLine {
   commitment: Commitment;
@@ -34,7 +40,7 @@ export interface CoverageReport {
 }
 
 export function isInScope(c: Commitment): boolean {
-  return !isResolved(c) && c.lifecycle !== "canceled" && c.lifecycle !== "expired";
+  return !isResolved(c) && (c.lifecycle === "trial" || c.lifecycle === "active");
 }
 
 export function buildCoverage(commitments: Commitment[]): CoverageReport {
@@ -43,19 +49,20 @@ export function buildCoverage(commitments: Commitment[]): CoverageReport {
   const unpriced: UnpricedLine[] = [];
 
   for (const c of scope) {
-    const monthly = monthlyEquivalentMinor(c.terms);
-    const annual = annualEquivalentMinor(c.terms);
+    const currentTerm = termAt(c, todayISO());
+    const monthly = monthlyEquivalentMinor(currentTerm);
+    const annual = annualEquivalentMinor(currentTerm);
     if (monthly === null || annual === null) {
       unpriced.push({
         commitment: c,
-        reason: !c.terms.recurrence
+        reason: !currentTerm.recurrence
           ? "no_schedule"
-          : (c.terms.amountUnknownReason ?? "no_evidence"),
+          : (currentTerm.amountUnknownReason ?? "no_evidence"),
       });
       continue;
     }
-    const group = byCurrency.get(c.terms.currency) ?? {
-      currency: c.terms.currency,
+    const group = byCurrency.get(currentTerm.currency) ?? {
+      currency: currentTerm.currency,
       monthlyMinor: 0,
       annualMinor: 0,
       lines: [],
@@ -63,7 +70,7 @@ export function buildCoverage(commitments: Commitment[]): CoverageReport {
     group.monthlyMinor += monthly;
     group.annualMinor += annual;
     group.lines.push({ commitment: c, monthlyMinor: monthly, annualMinor: annual });
-    byCurrency.set(c.terms.currency, group);
+    byCurrency.set(currentTerm.currency, group);
   }
 
   const groups = [...byCurrency.values()]
@@ -99,13 +106,14 @@ export function scheduledBills(
         : [];
     for (const date of dates) {
       if (c.renewalStopDate && date > c.renewalStopDate) continue;
+      const term = termAt(c, date);
       out.push({
         id: `${c.id}-${date}`,
         commitment: c,
         date,
-        amountMinor: c.terms.amountMinor,
-        currency: c.terms.currency,
-        estimated: c.nextBillEstimated || c.terms.amountMinor === null,
+        amountMinor: term.amountMinor,
+        currency: term.currency,
+        estimated: c.nextBillEstimated || term.amountMinor === null,
       });
     }
   }

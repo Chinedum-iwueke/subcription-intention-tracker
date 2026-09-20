@@ -1,0 +1,23 @@
+# V2 discovery verification
+
+The repository includes a consented Gmail and Plaid discovery path. Both public flags default off. No Google OAuth client, Plaid partner account, staging project, encryption key, or source consent was available for this run. The provider choices are provisional until the owner approves scope, region, assessment, retention, pricing and operating cost.
+
+## Data flow
+
+1. `/discovery` explains each source and starts connection only after a user click. Gmail requests `gmail.readonly` through a one-time state and server-side code exchange. Plaid Link requests the Transactions product and configured country codes; its short-lived Link and public tokens pass through the browser as required by Link. Long-lived Gmail refresh and Plaid access tokens are AES-GCM encrypted in Edge functions using a private `DISCOVERY_TOKEN_KEY`; only service-role code can read connection rows. No long-lived provider credential or service key is sent to the web app.
+2. `sync-discovery` runs only when privately scheduled and `DISCOVERY_INGESTION_ENABLED=true`. Gmail uses a bounded search over recent subscription terms and retains only short redacted excerpts. The initial deterministic email parser recognizes explicit EUR, USD and GBP symbols; other currencies and unsupported email formats remain for manual review rather than guessed normalization. Plaid syncs posted transactions in currencies with two decimal places and groups at least three similar spaced charges within one account and currency; other currency precisions wait for a core money-model upgrade. Variable amounts remain unknown; transaction data never supplies a legal cutoff or a confirmed next bill.
+3. Both sources create only `unreviewed` review candidates with a stable hashed source key. The existing review inbox requires human field decisions before a commitment enters the inventory. A possible existing merchant match remains a duplicate suggestion. Disconnection stops future ingestion; separate removal deletes unreviewed source findings and observed transaction history, while confirmed commitments remain.
+
+## Repository checks
+
+Run `npm run verify:discovery`, `npx tsc --noEmit`, `npm run build`, and the existing Phase 2 and web MVP checks. The discovery fixture test covers stable, variable, and one-off transaction patterns; no inferred cutoff or next bill; email redaction; restricted table grants; and Edge syntax. These are local checks, not a live provider proof.
+
+On 20 September 2026, those commands passed. A local browser smoke test opened `/discovery` in demo mode: both connection controls were disabled with fallback guidance, navigation and review links rendered, and the browser reported no runtime errors. No provider OAuth, bank Link, database migration, or source scan was exercised.
+
+## Staging and release checks
+
+- Apply migration six after the prior migrations. Test unauthenticated and cross-owner direct reads of connection tokens, OAuth states, observations, candidate rows, and every source action. Verify one-time OAuth state expiry/replay, callback redirect allowlist, encrypted token rotation, and no tokens or message bodies in logs, analytics, errors, or exports.
+- Complete Google's restricted-scope verification and applicable security assessment before real Gmail connection. Verify consent screen, exact requested scope, refresh/revocation, bounded search, pagination, nonmatching message exclusion, and full-body discard. [Google scope requirements](https://developers.google.com/workspace/gmail/api/auth/scopes), [verification requirements](https://support.google.com/cloud/answer/13464321).
+- Approve Plaid access and cost in each supported country and institution before showing the bank control. Verify Link OAuth redirects, Transactions-only consent, item expiration, update mode, `/transactions/sync` added/modified/removed pagination, pending-to-posted transitions, and `/item/remove` on disconnect. [Plaid Link](https://plaid.com/docs/link/), [transaction sync](https://plaid.com/docs/transactions/sync-migration/), [item removal](https://plaid.com/docs/api/items/).
+- Test disconnect during an active scan, provider revocation failure and retry, source refusal, one-off and variable charges, duplicate plans at one merchant, reconnection after consent expiry, and separate removal of old findings. Confirm no source can update an accepted commitment or schedule without review.
+- Schedule `sync-discovery` with `DISCOVERY_WORKER_TOKEN` from a secret store. Monitor scan failures and token expiry. Keep `GMAIL_DISCOVERY_ENABLED`, `PLAID_DISCOVERY_ENABLED`, `DISCOVERY_INGESTION_ENABLED`, and matching public flags off until these checks pass. Re-run account export and deletion with connected sources.

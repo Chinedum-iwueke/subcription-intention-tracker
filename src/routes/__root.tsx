@@ -12,6 +12,9 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { CommitStoreProvider } from "../lib/commit/store";
+import { useCommitStore } from "../lib/commit/store";
+import { cloudConfigured } from "../lib/commit/cloud";
+import { useRouterState } from "@tanstack/react-router";
 import { Toaster } from "../components/ui/sonner";
 
 
@@ -108,6 +111,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap",
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
     ],
   }),
   shellComponent: RootShell,
@@ -133,14 +137,28 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  useEffect(() => { if ('serviceWorker' in navigator) void navigator.serviceWorker.register('/sw.js'); }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <CommitStoreProvider>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
+        <AccountGate />
         <Toaster />
       </CommitStoreProvider>
     </QueryClientProvider>
   );
 }
 
+function AccountGate() {
+  const { ready, userEmail, syncError } = useCommitStore();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  if (!cloudConfigured) return <Outlet />;
+  if (!ready) return <div className="grid min-h-screen place-items-center text-sm text-muted-foreground">Loading your account…</div>;
+  if (!userEmail && pathname !== "/auth" && pathname !== "/demo/checkout" && pathname !== "/capture/import") {
+    const next = encodeURIComponent(pathname.startsWith("/") ? pathname : "/upcoming");
+    if (typeof window !== "undefined") window.location.replace(`/auth?next=${next}`);
+    return null;
+  }
+  if (syncError && !userEmail) return <p className="p-6 text-destructive">{syncError}</p>;
+  return <Outlet />;
+}

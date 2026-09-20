@@ -50,7 +50,7 @@ export const Route = createFileRoute("/add")({
 const CURRENCIES = ["EUR", "GBP", "USD", "CHF", "SEK", "PLN", "CAD", "AUD", "JPY"];
 
 function AddPage() {
-  const { add } = useCommitStore();
+  const { add, settings } = useCommitStore();
   const navigate = useNavigate();
   const today = todayISO();
 
@@ -83,7 +83,7 @@ function AddPage() {
     cutoff: cutoff || null,
     bill: nextBill || null,
     trialEnd: trialEnd || null,
-  });
+  }, settings);
 
   // Keep the proposal in the field until the person edits it themselves.
   React.useEffect(() => {
@@ -97,18 +97,25 @@ function AddPage() {
     e.preventDefault();
     if (!merchant.trim()) return setError("Enter the merchant name.");
     if (countInvalid) return setError("The interval count must be a whole number of 1 or more.");
-    if (!amountUnknown && amount && Number.isNaN(Number(amount)))
-      return setError("The price must be a number, or mark it unknown.");
+    if (!amountUnknown && amount && !/^\d+(?:\.\d{1,2})?$/.test(amount))
+      return setError("Enter a nonnegative price with at most two decimal places, or mark it unknown.");
+    if (noticeDays && (!/^\d+$/.test(noticeDays) || Number(noticeDays) > 366))
+      return setError("Notice period must be a whole number from 0 to 366 days.");
+    if (nextBill && trialEnd && nextBill < trialEnd)
+      return setError("The next bill cannot be before the trial ends. Check those dates.");
+    if (manageUrl && channel === "web" && !safeHost(manageUrl))
+      return setError("Enter a valid HTTPS provider management URL, or leave it blank.");
     if (tooLate && !ack)
       return setError("Acknowledge the target falling after the merchant cutoff, or pick an earlier date.");
     setError(null);
 
-    const anchor = nextBill || trialEnd || today;
+    const anchor = nextBill || trialEnd || null;
+    const capturedAt = new Date().toISOString();
     const record: Commitment = {
       id: `${merchant.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Math.random().toString(36).slice(2, 6)}`,
       merchant: merchant.trim(),
-      merchantDomain: manageUrl ? safeHost(manageUrl) : undefined,
-      manageUrl: manageUrl && manageUrl.startsWith("https://") ? manageUrl : undefined,
+      merchantDomain: channel === "web" && manageUrl ? safeHost(manageUrl) : undefined,
+      manageUrl: channel === "web" && manageUrl ? manageUrl : undefined,
       planNickname: plan.trim() || "Unnamed plan",
       category: category.trim() || "Uncategorised",
       channel,
@@ -120,13 +127,13 @@ function AddPage() {
         effectiveFrom: today,
         effectiveTo: null,
         amountMinor: amountUnknown || !amount ? null : Math.round(Number(amount) * 100),
-        amountUnknownReason: amountUnknown ? "no_evidence" : undefined,
+        amountUnknownReason: amountUnknown || !amount ? "no_evidence" : undefined,
         currency,
-        recurrence: {
+        recurrence: anchor ? {
           intervalCount: Number(intervalCount),
           intervalUnit,
           anchorDate: anchor,
-        },
+        } : null,
       },
       termHistory: [],
       nextBillDate: nextBill || null,
@@ -144,10 +151,10 @@ function AddPage() {
           field: "amount",
           label: "Recurring amount",
           value: amountUnknown || !amount ? null : `${currency} ${amount}`,
-          unknownReason: amountUnknown ? "no_evidence" : undefined,
+          unknownReason: amountUnknown || !amount ? "no_evidence" : undefined,
           origin: "manual",
           capturedAt: new Date().toISOString(),
-          verification: "confirmed",
+          verification: amountUnknown || !amount ? "unconfirmed" : "confirmed",
         },
         {
           field: "cutoff",
@@ -158,6 +165,16 @@ function AddPage() {
           capturedAt: new Date().toISOString(),
           verification: cutoff ? "confirmed" : "unconfirmed",
         },
+        { field: "next_bill", label: "Next billing date", value: nextBill || null,
+          unknownReason: nextBill ? undefined : "no_evidence", origin: "manual", capturedAt,
+          verification: nextBill ? "confirmed" : "unconfirmed" },
+        { field: "trial_end", label: "Trial end", value: trialEnd || null,
+          unknownReason: trialEnd ? undefined : "no_evidence", origin: "manual", capturedAt,
+          verification: trialEnd ? "confirmed" : "unconfirmed" },
+        { field: "recurrence", label: "Billing interval", value: `${intervalCount} ${intervalUnit}${Number(intervalCount) === 1 ? "" : "s"}`,
+          origin: "manual", capturedAt, verification: "confirmed" },
+        { field: "purchase_channel", label: "Purchase channel", value: channel,
+          origin: "manual", capturedAt, verification: "confirmed" },
       ],
       history: [
         {
@@ -187,6 +204,13 @@ function AddPage() {
       title="Add a commitment"
       lede="Record what you actually know. An unknown date stays visibly unknown — Commit will not fill it with a guess."
     >
+      <Panel title="Choose a starting point" description="One useful record is enough to begin. You can fill gaps later.">
+        <div className="flex flex-wrap gap-3 text-sm">
+          <a href="#merchant" className="underline">Enter a subscription manually</a>
+          <a href="/review" className="underline">Review a receipt or screenshot</a>
+        </div>
+        <p className="mt-3 text-xs text-muted-foreground">For an existing Apple subscription, check Settings → your name → Subscriptions on your Apple device and enter the terms you find. Commit cannot read your Apple inventory automatically.</p>
+      </Panel>
       <form onSubmit={submit} className="space-y-6" noValidate>
         <Panel title="What is it?">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -303,6 +327,7 @@ function AddPage() {
         </Panel>
 
         <Panel title="Dates" description="Each of these means something different. Leave anything you cannot evidence blank.">
+          {!nextBill && !trialEnd ? <p className="mb-3 text-xs text-muted-foreground">Without a first billing or trial date, the recurrence anchor and future charges remain unknown. You can still save this record.</p> : null}
           <div className="grid gap-4 sm:grid-cols-2">
             <Field id="trial-end" label="Trial end" hint="End of free or promotional access.">
               <Input id="trial-end" type="date" value={trialEnd} onChange={(e) => setTrialEnd(e.target.value)} />
@@ -423,7 +448,10 @@ function AddPage() {
 
 function safeHost(url: string) {
   try {
-    return new URL(url).host;
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" && parsed.hostname && !parsed.username && !parsed.password
+      ? parsed.host
+      : undefined;
   } catch {
     return undefined;
   }

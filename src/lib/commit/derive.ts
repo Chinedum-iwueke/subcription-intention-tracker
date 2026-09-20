@@ -13,6 +13,18 @@ export const REVIEW_BUFFER_DAYS = 3;
 export const CANCEL_BUFFER_FROM_CUTOFF_DAYS = 2;
 export const CANCEL_BUFFER_FROM_BILL_DAYS = 3;
 
+export interface PlanningBuffers {
+  reviewBufferDays: number;
+  cancelBufferCutoffDays: number;
+  cancelBufferBillDays: number;
+}
+
+export const DEFAULT_PLANNING_BUFFERS: PlanningBuffers = {
+  reviewBufferDays: REVIEW_BUFFER_DAYS,
+  cancelBufferCutoffDays: CANCEL_BUFFER_FROM_CUTOFF_DAYS,
+  cancelBufferBillDays: CANCEL_BUFFER_FROM_BILL_DAYS,
+};
+
 export function earliestKnown(...dates: (ISODate | null | undefined)[]): ISODate | null {
   const list = dates.filter((d): d is ISODate => Boolean(d)).sort();
   return list[0] ?? null;
@@ -25,6 +37,7 @@ export function earliestKnown(...dates: (ISODate | null | undefined)[]): ISODate
 export function proposeTarget(
   intention: Intention,
   opts: { cutoff?: ISODate | null; bill?: ISODate | null; trialEnd?: ISODate | null },
+  buffers: PlanningBuffers = DEFAULT_PLANNING_BUFFERS,
 ): { date: ISODate | null; basis: string } {
   const cutoff = opts.cutoff ?? null;
   const bill = earliestKnown(opts.trialEnd, opts.bill);
@@ -35,23 +48,23 @@ export function proposeTarget(
   if (intention === "cancel") {
     if (cutoff)
       return {
-        date: addDays(cutoff, -CANCEL_BUFFER_FROM_CUTOFF_DAYS),
-        basis: `${CANCEL_BUFFER_FROM_CUTOFF_DAYS} days before the merchant action cutoff`,
+        date: addDays(cutoff, -buffers.cancelBufferCutoffDays),
+        basis: `${buffers.cancelBufferCutoffDays} days before the merchant action cutoff`,
       };
     if (bill)
       return {
-        date: addDays(bill, -CANCEL_BUFFER_FROM_BILL_DAYS),
-        basis: `${CANCEL_BUFFER_FROM_BILL_DAYS} days before the next bill (cutoff unknown)`,
+        date: addDays(bill, -buffers.cancelBufferBillDays),
+        basis: `${buffers.cancelBufferBillDays} days before the next bill (cutoff unknown)`,
       };
     return { date: null, basis: "No cutoff or bill date recorded yet." };
   }
   const anchor = earliestKnown(cutoff, bill);
   if (!anchor) return { date: null, basis: "No cutoff or bill date recorded yet." };
   return {
-    date: addDays(anchor, -REVIEW_BUFFER_DAYS),
+    date: addDays(anchor, -buffers.reviewBufferDays),
     basis: cutoff
-      ? `${REVIEW_BUFFER_DAYS} days before the merchant action cutoff`
-      : `${REVIEW_BUFFER_DAYS} days before the earliest known date`,
+      ? `${buffers.reviewBufferDays} days before the earliest known date (merchant cutoff)`
+      : `${buffers.reviewBufferDays} days before the earliest known date`,
   };
 }
 
@@ -185,7 +198,7 @@ export function buildUpcoming(
 
 export function activeTrials(commitments: Commitment[], today: ISODate = todayISO()) {
   return commitments
-    .filter((c) => c.lifecycle === "trial" && c.trialEndDate)
+    .filter((c) => !isResolved(c) && c.lifecycle === "trial" && c.trialEndDate)
     .map((c) => ({ commitment: c, daysLeft: daysBetween(today, c.trialEndDate!) }))
     .sort((a, b) => a.daysLeft - b.daysLeft);
 }
@@ -239,7 +252,7 @@ export function buildCalendarEvents(
         });
       }
     }
-    if (c.trialEndDate && c.trialEndDate >= from && c.trialEndDate <= to) {
+    if (!isResolved(c) && c.trialEndDate && c.trialEndDate >= from && c.trialEndDate <= to) {
       events.push({
         id: `${c.id}-trial`,
         date: c.trialEndDate,
@@ -251,7 +264,7 @@ export function buildCalendarEvents(
       });
     }
 
-    if (c.nextBillDate && !isResolved(c)) {
+    if (c.nextBillDate && !isResolved(c) && (c.lifecycle === "trial" || c.lifecycle === "active")) {
       const dates = c.terms.recurrence
         ? occurrencesBetween(c.nextBillDate, c.terms.recurrence, from, to)
         : c.nextBillDate >= from && c.nextBillDate <= to

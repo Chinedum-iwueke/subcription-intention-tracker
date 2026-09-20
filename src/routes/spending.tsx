@@ -5,7 +5,7 @@ import * as React from "react";
 import { AppShell, Panel } from "@/components/commit/AppShell";
 import { EventMarker, SampleTag } from "@/components/commit/badges";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { describeRecurrence, formatDayMonth } from "@/lib/commit/dates";
+import { describeRecurrence, formatDayMonth, todayISO } from "@/lib/commit/dates";
 import { formatMoney } from "@/lib/commit/money";
 import { useCommitStore, useToday } from "@/lib/commit/store";
 import {
@@ -14,6 +14,7 @@ import {
   monthBounds,
   projectedOutflow,
   scheduledBills,
+  termAt,
   UNPRICED_REASON_LABEL,
   weeklyOutflow,
 } from "@/lib/commit/spending";
@@ -41,7 +42,7 @@ export const Route = createFileRoute("/spending")({
 });
 
 function SpendingPage() {
-  const { commitments } = useCommitStore();
+  const { commitments, mode } = useCommitStore();
   const today = useToday();
   const [view, setView] = React.useState("monthly");
 
@@ -81,9 +82,7 @@ function SpendingPage() {
               An unknown price is a real value with a reason. It is never counted as zero, so these
               totals describe {coverage.priced} of {coverage.inScope} commitments.
             </p>
-            <div className="mt-4">
-              <SampleTag />
-            </div>
+            {mode === "demo" ? <div className="mt-4"><SampleTag /></div> : null}
           </Panel>
 
           <Panel title="Unknown prices" description="Excluded from every total on this page.">
@@ -143,7 +142,7 @@ function SpendingPage() {
                       <p className="text-xs uppercase tracking-wide text-muted-foreground">
                         {b.currency} total
                       </p>
-                      <p className="font-mono text-xl">{formatMoney(b.totalMinor, b.currency)}</p>
+                      <p className="font-mono text-xl">{b.count === b.unknownCount ? "Amount unknown" : formatMoney(b.totalMinor, b.currency)}</p>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {b.count} bill{b.count === 1 ? "" : "s"}
                         {b.unknownCount ? ` · ${b.unknownCount} with an unknown amount` : ""}
@@ -203,7 +202,7 @@ function SpendingPage() {
               ) : (
                 w.buckets.map((b) => (
                   <p key={b.currency} className="mt-1 font-mono text-sm">
-                    {formatMoney(b.totalMinor, b.currency)}
+                    {b.count === b.unknownCount ? `${b.currency} amount unknown` : formatMoney(b.totalMinor, b.currency)}
                     {b.unknownCount ? <span className="text-warn"> +?</span> : null}
                   </p>
                 ))
@@ -229,7 +228,7 @@ function SpendingPage() {
                 ) : (
                   p.buckets.map((b) => (
                     <span key={b.currency} className="font-mono text-sm">
-                      {formatMoney(b.totalMinor, b.currency)}
+                      {b.count === b.unknownCount ? `${b.currency} amount unknown` : formatMoney(b.totalMinor, b.currency)}
                       {b.unknownCount ? (
                         <span className="ml-1 text-xs font-sans text-warn">
                           + {b.unknownCount} unknown
@@ -304,8 +303,8 @@ function EquivalentView({
                     {line.commitment.merchant}
                   </Link>
                   <span className="text-xs text-muted-foreground">
-                    {formatMoney(line.commitment.terms.amountMinor, line.commitment.terms.currency)}{" "}
-                    · {describeRecurrence(line.commitment.terms.recurrence)}
+                    {formatMoney(termAt(line.commitment, todayISO()).amountMinor, g.currency)}{" "}
+                    · {describeRecurrence(termAt(line.commitment, todayISO()).recurrence)}
                   </span>
                   <span className="ml-auto font-mono text-sm">
                     {formatMoney(
