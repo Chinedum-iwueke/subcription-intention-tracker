@@ -17,23 +17,88 @@ export type Database = {
       commit_profiles: {
         Row: {
           owner_id: string
+          reminder_governance: Json
           settings: Json
           updated_at: string
           version: number
         }
         Insert: {
           owner_id: string
+          reminder_governance?: Json
           settings?: Json
           updated_at?: string
           version?: number
         }
         Update: {
           owner_id?: string
+          reminder_governance?: Json
           settings?: Json
           updated_at?: string
           version?: number
         }
         Relationships: []
+      }
+      commit_reminder_jobs: {
+        Row: {
+          action_date: string
+          action_kind: string
+          attempts: number
+          channel: string
+          commitment_id: string
+          commitment_version: number
+          created_at: string
+          delivered_at: string | null
+          id: string
+          last_error: string | null
+          lease_expires_at: string | null
+          owner_id: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["commit_reminder_status"]
+          updated_at: string
+        }
+        Insert: {
+          action_date: string
+          action_kind: string
+          attempts?: number
+          channel: string
+          commitment_id: string
+          commitment_version: number
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          last_error?: string | null
+          lease_expires_at?: string | null
+          owner_id: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["commit_reminder_status"]
+          updated_at?: string
+        }
+        Update: {
+          action_date?: string
+          action_kind?: string
+          attempts?: number
+          channel?: string
+          commitment_id?: string
+          commitment_version?: number
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          last_error?: string | null
+          lease_expires_at?: string | null
+          owner_id?: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["commit_reminder_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commit_reminder_jobs_owner_id_commitment_id_fkey"
+            columns: ["owner_id", "commitment_id"]
+            isOneToOne: false
+            referencedRelation: "commitments"
+            referencedColumns: ["owner_id", "id"]
+          },
+        ]
       }
       commitments: {
         Row: {
@@ -142,6 +207,18 @@ export type Database = {
         }
         Returns: undefined
       }
+      claim_commit_reminders: {
+        Args: { p_batch_size?: number }
+        Returns: {
+          action_date: string
+          action_kind: string
+          channel: string
+          commitment_id: string
+          commitment_version: number
+          id: string
+          owner_id: string
+        }[]
+      }
       commit_preserves_tail: {
         Args: { p_new: Json; p_old: Json }
         Returns: boolean
@@ -149,6 +226,15 @@ export type Database = {
       delete_my_commit_account: { Args: never; Returns: undefined }
       delete_unreviewed_commit_evidence: {
         Args: { p_candidate_id: string; p_path: string }
+        Returns: undefined
+      }
+      rebuild_commit_reminders_for: {
+        Args: {
+          p_body: Json
+          p_commitment_id: string
+          p_owner: string
+          p_version: number
+        }
         Returns: undefined
       }
       register_commit_evidence: {
@@ -176,7 +262,16 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      commit_reminder_status:
+        | "queued"
+        | "leased"
+        | "provider_accepted"
+        | "delivered"
+        | "delivery_delayed"
+        | "bounced"
+        | "complained"
+        | "failed"
+        | "suppressed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -303,6 +398,18 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      commit_reminder_status: [
+        "queued",
+        "leased",
+        "provider_accepted",
+        "delivered",
+        "delivery_delayed",
+        "bounced",
+        "complained",
+        "failed",
+        "suppressed",
+      ],
+    },
   },
 } as const
