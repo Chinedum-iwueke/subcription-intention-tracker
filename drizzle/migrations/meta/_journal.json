@@ -1,5 +1,27 @@
 {
   "version": "7",
   "dialect": "postgresql",
-  "entries": []
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1789981054446,
+      "tag": "0000_202609200001_web_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789981128822,
+      "tag": "0001_202609200002_reminder_outbox",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789981155325,
+      "tag": "0002_202609200003_review_and_snooze",
+      "breakpoints": true
+    }
+  ]
 }
