@@ -100,6 +100,33 @@ export type Database = {
           },
         ]
       }
+      commit_reminder_webhook_events: {
+        Row: {
+          event_type: string
+          id: string
+          message_id: string | null
+          payload: Json
+          provider: string
+          received_at: string
+        }
+        Insert: {
+          event_type: string
+          id?: string
+          message_id?: string | null
+          payload: Json
+          provider: string
+          received_at?: string
+        }
+        Update: {
+          event_type?: string
+          id?: string
+          message_id?: string | null
+          payload?: Json
+          provider?: string
+          received_at?: string
+        }
+        Relationships: []
+      }
       commitments: {
         Row: {
           body: Json
@@ -207,6 +234,25 @@ export type Database = {
         }
         Returns: undefined
       }
+      apply_commit_candidate_update: {
+        Args: {
+          p_candidate_body: Json
+          p_candidate_id: string
+          p_commitment_body: Json
+          p_commitment_id: string
+          p_expected_candidate_version: number
+          p_expected_commitment_version: number
+        }
+        Returns: undefined
+      }
+      apply_commit_extraction: {
+        Args: { p_items: Json; p_source_path: string }
+        Returns: number
+      }
+      cancel_commit_extraction: {
+        Args: { p_source_path: string }
+        Returns: undefined
+      }
       claim_commit_reminders: {
         Args: { p_batch_size?: number }
         Returns: {
@@ -228,6 +274,7 @@ export type Database = {
         Args: { p_candidate_id: string; p_path: string }
         Returns: undefined
       }
+      mark_commit_evidence_expired: { Args: never; Returns: number }
       rebuild_commit_reminders_for: {
         Args: {
           p_body: Json
@@ -259,6 +306,10 @@ export type Database = {
       save_review_candidate: {
         Args: { p_body: Json; p_expected_version: number; p_id: string }
         Returns: number
+      }
+      snooze_commit_reminder: {
+        Args: { p_days: number; p_job_id: string }
+        Returns: string
       }
     }
     Enums: {
